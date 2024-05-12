@@ -1,0 +1,24 @@
+#
+# Docker Compose file of Archive service database
+#
+version: "2"
+volumes:
+    archive-service-db-volume:
+        driver: local
+        per_container: true
+
+services:
+    # Archive Database
+    archive-service-db:
+        image: postgres:11.5
+        expose:
+            - "5432:5432"
+        environment:
+            - POSTGRES_DB=archivedb
+            - POSTGRES_USER=arcdba
+            - POSTGRES_PASSWORD=arcdba
+        shm_size: 1G
+        volumes:
+            - archive-service-db-volume:/var/lib/postgresql/data
+        labels:
+            io.rancher.scheduler.affinity:host_label: c8-archive-service=true

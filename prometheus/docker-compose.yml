@@ -1,0 +1,94 @@
+cadvisor:
+  labels:
+    io.rancher.scheduler.global: 'true'
+  image: google/cadvisor:latest
+  stdin_open: true
+  volumes:
+    - "/:/rootfs:ro"
+    - "/var/run:/var/run:rw"
+    - "/sys:/sys:ro"
+    - "/var/lib/docker/:/var/lib/docker:ro"
+
+node-exporter:
+  labels:
+    io.rancher.scheduler.global: 'true'
+  image: prom/node-exporter:latest
+  command: --collector.tcpstat
+           --collector.textfile.directory=/var/run/node-exporter
+  volumes:
+    - "/var/run:/var/run"
+  stdin_open: true
+
+prometheus-rancher-exporter:
+    tty: true
+    stdin_open: true
+    environment:
+      - CATTLE_ACCESS_KEY=$RANCHER_EXPORTER_ACCESS_KEY
+      - CATTLE_SECRET_KEY=$RANCHER_EXPORTER_SECRET_KEY
+      - CATTLE_URL=$RANCHER_EXPORTER_SERVER_URL
+      - HIDE_SYS=true
+    expose:
+      - 9173:9173
+    image: centricsoftware/prometheus-rancher-exporter:latest
+
+skyline-metrics:
+  labels:
+    io.rancher.scheduler.global: 'true'
+    io.rancher.container.pull_image: always
+  environment:
+    - KAFKA_BROKER_LIST=${KAFKA_BOOTSTRAP_SERVERS}
+  image: centricsoftware/skyline-metrics:latest
+  volumes:
+    - "/var/run/docker.sock:/var/run/docker.sock"
+  stdin_open: true
+
+prometheus-config:
+    image: centricsoftware/var-to-file
+    environment:
+      - file_path_prom_conf=/etc/prometheus-config/prometheus.yml
+      - file_content_prom_conf=${PROMETHEUS_CONFIG}
+    volumes:
+      - /etc/prometheus-config/
+    labels:
+      io.rancher.container.pull_image: always
+      io.rancher.container.start_once: true
+    net: none
+
+#
+# Recommendations from https://www.robustperception.io/how-much-ram-does-my-prometheus-need-for-ingestion/.
+#
+# On C8 performance tests following results have been observed:
+#
+# (increase(prometheus_local_storage_chunk_ops_total{job="prometheus",type="create"}[6h]) / 2 / .8 * 1.6) returned around 49000
+# max_over_time(prometheus_local_storage_memory_series{job="prometheus"}[6h]) returned around 30000
+#
+# Add the two numbers together, and that’s the minimum for -storage.local.memory-chunks flag = 79000
+# I'll use 200000 to be on a safe side. Other flags will be either half or double of that.
+#
+# Also, I'll reduce the sample retention time from 15 to 10 days
+#
+prometheus:
+    image: prom/prometheus:v1.8.2
+    command: -config.file=/etc/prometheus-config/prometheus.yml
+             -storage.local.path=/prometheus
+             -web.console.libraries=/etc/prometheus/console_libraries
+             -web.console.templates=/etc/prometheus/consoles
+             -storage.local.retention=240h0m0s
+             -storage.local.memory-chunks=200000
+             -storage.local.max-chunks-to-persist=100000
+             -storage.local.checkpoint-dirty-series-limit=200000
+             -storage.local.index-cache-size.fingerprint-to-metric=200000
+             -storage.local.index-cache-size.fingerprint-to-timerange=100000
+             -storage.local.index-cache-size.label-name-to-label-values=200000
+             -storage.local.index-cache-size.label-pair-to-fingerprints=400000
+    ports:
+      - "9090:9090"
+    labels:
+      io.rancher.sidekicks: prometheus-config
+      io.rancher.scheduler.affinity:host_label_soft: prometheus=true
+    volumes_from:
+       - prometheus-config
+    links:
+      - cadvisor:cadvisor
+      - node-exporter:node-exporter
+      - prometheus-rancher-exporter:prometheus-rancher-exporter

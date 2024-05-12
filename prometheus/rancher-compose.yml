@@ -1,0 +1,22 @@
+node-exporter:
+  upgrade_strategy:
+    start_first: true
+
+skyline-metrics:
+  upgrade_strategy:
+    start_first: true
+
+prometheus-rancher-exporter:
+  scale: 1
+  upgrade_strategy:
+    start_first: true
+
+prometheus:
+  scale: 1
+  health_check:
+    port: 9090
+    interval: 5000
+    unhealthy_threshold: 3
+    request_line: ''
+    healthy_threshold: 2
+    response_timeout: 5000

@@ -1,0 +1,60 @@
+version: '2'
+volumes:
+    grafana-data-volume: {}
+
+services:
+  grafana:
+    image: grafana/grafana:6.2.5
+    environment:
+      - GF_SMTP_ENABLED=true
+      - GF_SMTP_HOST=$GRAFANA_SMTP_HOST
+      - GF_SMTP_USER=$GRAFANA_SMTP_USERNAME
+      - GF_SMTP_PASSWORD=$GRAFANA_SMTP_PASSWORD
+      - GF_SMTP_FROM_ADDRESS=$GRAFANA_SMTP_FROM_ADDRESS
+      - GF_SMTP_SKIP_VERIFY=true
+      - GF_SERVER_DOMAIN=$GRAFANA_DOMAIN
+    ports:
+      - 3000:3000
+    labels:
+      io.rancher.container.pull_image: always
+      io.rancher.scheduler.affinity:host_label_soft: grafana=true
+      io.rancher.sidekicks: grafana-init, grafana-alerts
+    volumes:
+       - grafana-data-volume:/var/lib/grafana/
+
+  grafana-init:
+    image: centricsoftware/var-to-file
+    environment:
+      - file_path_init=/usr/local/bin/grafana-init.sh
+      - file_content_init=${GRAFANA_INIT}
+      - file_path_c8_reportservice_stats=/etc/grafana-config/C8_ReportService_Stats.json
+      - file_content_c8_reportservice_stats=${GRAFANA_C8_REPORT_SERVICE_STATS}
+      - file_path_host_stats=/etc/grafana-config/Docker_and_system_Stats.json
+      - file_content_host_stats=${GRAFANA_HOST_STATS}
+      - file_path_prometheus_stats=/etc/grafana-config/Prometheus_Stats.json
+      - file_content_prometheus_stats=${GRAFANA_PROMETHEUS_STATS}
+      - file_path_kafka_stats=/etc/grafana-config/Kafka_Stats.json
+      - file_content_kafka_stats=${GRAFANA_KAFKA_STATS}
+      - file_path_rancher_stats=/etc/grafana-config/Rancher_Stats.json
+      - file_content_rancher_stats=${GRAFANA_RANCHER_STATS}
+    command:
+      - bash
+      - -c
+      - 'var-to-file.sh; chmod +x /usr/local/bin/grafana-init.sh; grafana-init.sh /etc/grafana-config'
+    links:
+      - grafana:grafana
+    labels:
+      io.rancher.container.pull_image: always
+      io.rancher.container.start_once: true
+
+  grafana-alerts:
+    image: centricsoftware/skyline-alerts:latest
+    environment:
+      - GRAFANA_IP=$GRAFANA_DOMAIN
+      - DELAY=10
+      - ADMINPASS=admin
+    links:
+      - grafana:grafana
+    labels:
+      io.rancher.container.pull_image: always
+      io.rancher.container.start_once: true

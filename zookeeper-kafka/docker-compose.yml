@@ -1,0 +1,87 @@
+version: "2"
+volumes:
+  zk-volume:
+    driver: local
+    per_container: true
+  kafka-volume:
+    driver: local
+    per_container: true
+
+services:
+  #-----------------------------------------------------------------------------------------------------------------
+  # Zookeeper setup
+  #-----------------------------------------------------------------------------------------------------------------
+  zk:
+    image: centricsoftware/c8-zookeeper:${ZOOKEEPER_DOCKER_IMAGE_VERSION}
+    environment:
+      ZK_TICK_TIME: ${ZK_TICK_TIME}
+      ZK_INIT_LIMIT: ${ZK_INIT_LIMIT}
+      ZK_SYNC_LIMIT: ${ZK_SYNC_LIMIT}
+      ZK_MAX_CLIENT_CXNS: ${ZK_MAX_CLIENT_CXNS}
+      ZOOKEEPER_CLUSTER: "true"
+      ZOOKEEPER_PORT: ${ZOOKEEPER_PORT}
+      ZOOKEEPER_SERVER_LIST: ${ZOOKEEPER_SERVER_LIST}
+      ZOOKEEPER_HOST_COMMAND: hostname
+    expose:
+      - 2181:2181/tcp
+      - 2888:2888/tcp
+      - 3888:3888/tcp
+    labels:
+      io.rancher.scheduler.affinity:container_label_ne: io.rancher.stack_service.name=$${stack_name}/$${service_name}
+      io.rancher.scheduler.affinity:host_label: zookeeper=true
+      io.rancher.container.hostname_override: container_name
+      io.rancher.container.pull_image: always
+    volumes:
+      - zk-volume:/opt/zookeeper/data
+
+  #-----------------------------------------------------------------------------------------------------------------
+  # Kafka setup
+  #-----------------------------------------------------------------------------------------------------------------
+  kafka:
+    image: centricsoftware/c8-kafka:${KAFKA_DOCKER_IMAGE_VERSION}
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: ${KAFKA_ZOOKEEPER_CONNECT}
+      KAFKA_ADVERTISE_PORT: ${KAFKA_ADVERTISE_PORT}
+      HOSTNAME_COMMAND: curl -Ss http://rancher-metadata.rancher.internal/2015-12-19/self/host/agent_ip
+      KAFKA_LOG_DIRS: /opt/kafka/logs
+      KAFKA_LOG_RETENTION_HOURS: ${KAFKA_LOG_RETENTION_HOURS}
+      KAFKA_OFFSETS_RETENTION_MINUTES: ${KAFKA_OFFSETS_RETENTION_MINUTES}
+      KAFKA_LEADER_IMBALANCE_CHECK_INTERVAL_SECONDS: ${KAFKA_LEADER_IMBALANCE_CHECK_INTERVAL_SECONDS}
+      KAFKA_NUM_PARTITIONS: ${KAFKA_NUM_PARTITIONS}
+      KAFKA_DEFAULT_REPLICATION_FACTOR: ${KAFKA_NUM_REPLICAS}
+      KAFKA_MIN_INSYNC_REPLICAS: ${KAFKA_NUM_INSYNC_REPLICAS}
+      KAFKA_OFFSETS_TOPIC_NUM_PARTITIONS: ${KAFKA_NUM_REPLICAS}
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: ${KAFKA_NUM_REPLICAS}
+    expose:
+      - 7071:7071/tcp
+    ports:
+      - 9092:9092/tcp
+    labels:
+      io.rancher.scheduler.affinity:container_label_ne: io.rancher.stack_service.name=$${stack_name}/$${service_name}
+      io.rancher.scheduler.affinity:host_label: kafka=true
+      io.rancher.container.hostname_override: container_name
+      io.rancher.container.pull_image: always
+    volumes:
+      - kafka-volume:/opt/kafka/logs
+    depends_on:
+      - zk
+    # Workaround for Alpine-based images not be able to resolve service aliases.
+    # See https://github.com/rancher/rancher/issues/5041
+    # and https://github.com/rancher/rancher/issues/7026
+    # TODO: remove it when issues are resolved in Alpine and/or Rancher
+    dns_search:
+      - rancher.internal
+
+  #-----------------------------------------------------------------------------------------------------------------
+  # Kafka rebalancer
+  #-----------------------------------------------------------------------------------------------------------------
+  kafka-rebalancer:
+    image: centricsoftware/c8-kafka:${KAFKA_DOCKER_IMAGE_VERSION}
+    command: /opt/kafka/bin/rebalance-partitions-to-all-brokers.sh 10 ${KAFKA_ZOOKEEPER_CONNECT} ${KAFKA_BOOTSTRAP_SERVERS}
+    labels:
+      io.rancher.scheduler.affinity:host_label: kafka=true
+      io.rancher.container.hostname_override: container_name
+      io.rancher.container.pull_image: always
+    depends_on:
+      - kafka
+

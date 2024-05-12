@@ -1,0 +1,23 @@
+#
+# Docker Compose file of Camunda BPM platform
+#
+version: "2"
+
+services:
+    camunda:
+        image: centricsoftware/centric8-camunda:${CAMUNDA_DOCKER_IMAGE_VERSION}
+        environment:
+            com_centricsoftware_c8_address:
+            com_centricsoftware_c8_username:
+            com_centricsoftware_c8_encryptedpassword:
+            DB_DRIVER:
+            DB_URL:
+            DB_USERNAME:
+            DB_PASSWORD:
+            WAIT_FOR:
+            DEBUG: "true"
+        ports:
+            - "8081:8080"
+        labels:
+            io.rancher.container.pull_image: always
+            io.rancher.scheduler.affinity:host_label: c8-camunda=true

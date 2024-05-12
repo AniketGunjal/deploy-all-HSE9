@@ -1,0 +1,40 @@
+version: '2'
+volumes:
+    vault-data-volume: {}
+
+services:
+  vault-config:
+    image: centricsoftware/var-to-file
+    environment:
+      - file_path_config=/config/vault.json
+      - file_content_config=$VAULT_CONFIG_CONTENT
+      - file_path_rootca=/config/certs/rootCA.crt
+      - file_content_rootca=$VAULT_ROOTCA_CONTENT
+      - file_path_cert=/config/certs/vault.crt
+      - file_content_cert=$VAULT_CERT_CONTENT
+      - file_path_key=/config/certs/vault.key
+      - file_content_key=$VAULT_KEY_CONTENT
+    volumes:
+      - /config
+    labels:
+      io.rancher.container.pull_image: always
+      io.rancher.container.start_once: true
+      io.rancher.scheduler.affinity:host_label_soft: c8-vault=true
+
+  vault:
+    image: vault:1.13.3
+    command: server -config='/config/vault.json'
+    cap_add:
+      - IPC_LOCK
+    environment:
+      VAULT_API_ADDR: https://vault:8200
+    labels:
+      io.rancher.sidekicks: vault-config
+      io.rancher.scheduler.affinity:host_label_soft: c8-vault=true
+    ports:
+      - "8200:8200"
+    restart: unless-stopped
+    volumes:
+      - vault-data-volume:/vault/file
+    volumes_from:
+      - vault-config

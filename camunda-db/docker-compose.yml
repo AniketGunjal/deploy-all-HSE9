@@ -1,0 +1,24 @@
+#
+# Docker Compose file of Camunda BPM platform
+#
+version: "2"
+volumes:
+    camunda-db-volume:
+        driver: local
+        per_container: true
+
+services:
+    # Camunda DB backend
+    camunda-db:
+        image: postgres:11.5
+        expose:
+            - "5432:5432"
+        environment:
+            - POSTGRES_DB=camundadb
+            - POSTGRES_USER=camundadba
+            - POSTGRES_PASSWORD=camundadba
+        shm_size: 1G
+        volumes:
+            - camunda-db-volume:/var/lib/postgresql/data
+        labels:
+            io.rancher.scheduler.affinity:host_label: c8-camunda=true

@@ -1,0 +1,4 @@
+version: '2'
+services:
+    report-service-db:
+        scale: 1

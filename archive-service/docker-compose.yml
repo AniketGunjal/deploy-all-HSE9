@@ -1,0 +1,60 @@
+#
+# Docker Compose file of Archive Service
+#
+version: "2"
+
+services:
+    archive-service:
+        image: centricsoftware/c8-svc-archive:${ARCHIVE_DOCKER_IMAGE_VERSION}
+        environment:
+            - archive_database_vendor
+            - archive_database_server
+            - archive_database_dbname
+            - archive_database_username
+            - archive_database_password
+            - archive_database_indexfragmentrebuildpct
+            - archive_database_indexfragmentreorganizepct
+            - archive_database_statisticsthreads
+            - archive_database_tabledeadtuplepct
+            - archive_database_pool_maxidle
+            - archive_database_pool_maxtotal
+            - archive_database_pool_minidle
+            - archive_server_iothreads
+            - archive_server_port
+            - archive_server_ssl
+            - archive_server_sslkeystoresvpath
+            - archive_server_sslpasswordsvpath
+            - archive_server_workerthreads
+            - archive_domainserver_address
+            - archive_domainserver_authentication
+            - archive_domainserver_oauth2_address
+            - archive_domainserver_oauth2_refreshbeforeexpirems
+            - archive_domainserver_username
+            - archive_domainserver_password
+            - archive_domainserver_skipsslverification
+            - archive_domainserver_comparethreads
+            - archive_domainserver_connecttimeout
+            - archive_domainserver_fetchlimit
+            - archive_domainserver_fetchthreads
+            - archive_domainserver_loginretryattempt
+            - archive_domainserver_readtimeout
+            - archive_domainserver_requestretryattempt
+            - archive_kafka_consumer_bootstrap_servers
+            - archive_kafka_consumer_group_id
+            - archive_kafka_consumer_isolation_level
+            - archive_kafka_consumer_max_poll_interval_ms
+            - archive_kafka_consumer_max_poll_records
+            - archive_kafka_consumer_request_timeout_ms
+            - archive_kafka_consumer_session_timeout_ms
+            - archive_kafka_patch_committimeout
+            - archive_kafka_patch_deadlockretries
+            - archive_kafka_patch_numberofthreads
+            - archive_kafka_patch_polltimeout
+            - archive_kafka_patch_prefetchminsize
+            - archive_kafka_patch_resetcursortimeout
+            - archive_kafka_patch_topic=DistributionTopic
+        ports:
+            - "8085:8085"
+        labels:
+            io.rancher.container.pull_image: always
+            io.rancher.scheduler.affinity:host_label: c8-archive-service=true

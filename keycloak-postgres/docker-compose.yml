@@ -1,0 +1,27 @@
+#
+# Docker Compose file of Keycloak Postgres DB for Rancher:
+#   Keycloak Postgres Database with Postgres Dependencies pre-set
+
+# Keycloak Postgres Database
+version: '2'
+
+services:
+    keycloak-postgres:
+        image: postgres:$KEYCLOAK_POSTGRES_IMAGE_VERSION
+        volumes:
+            - keycloak_postgres_data:/var/lib/postgresql/data
+        environment:
+            POSTGRES_DB: $KEYCLOAK_POSTGRES_DB
+            POSTGRES_USER: $KEYCLOAK_POSTGRES_USER
+            POSTGRES_PASSWORD: $KEYCLOAK_POSTGRES_PASSWORD
+            DB_ADDR: $KEYCLOAK_DB_ADDR
+            DB_PORT: $KEYCLOAK_DB_PORT
+            DB_VENDOR: $KEYCLOAK_DB_VENDOR
+            DB_DATABASE: $KEYCLOAK_DB_DATABASE
+            DB_USER: $KEYCLOAK_DB_USER
+            DB_PASSWORD: $KEYCLOAK_DB_PASSWORD
+        expose:
+            - "$KEYCLOAK_DB_PORT"
+        labels:
+            io.rancher.container.pull_image: always
+            io.rancher.scheduler.affinity:host_label: c8-keycloak-postgres=true

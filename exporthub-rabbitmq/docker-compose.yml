@@ -1,0 +1,36 @@
+#
+# Docker Compose file of ExportHub Service for Rancher:
+#   RabbitMQ
+#
+version: "2"
+volumes:
+    exporthub-mq-volume:
+        driver: local
+        per_container: true
+
+services:
+    # Exporthub Notification Topic
+    exporthub-mq:
+        hostname: exporthub-mq
+        image: rabbitmq:3.12.0-management
+        ports:
+            - "5671:5671"
+            - "5672:5672"
+            - "15671:15671"
+            - "15672:15672"
+        environment:
+            - CSI_DEFAULT_USER=csimq
+            - CSI_DEFAULT_PASS=csimq
+        command:
+            - sh
+            - -c
+            - |
+                echo 'loopback_users.guest = false' >> /etc/rabbitmq/rabbitmq.conf &&
+                echo 'default_user = '$$CSI_DEFAULT_USER >> /etc/rabbitmq/rabbitmq.conf &&
+                echo 'default_pass = '$$CSI_DEFAULT_PASS >> /etc/rabbitmq/rabbitmq.conf &&
+                rabbitmq-plugins enable rabbitmq_shovel rabbitmq_shovel_management &&
+                rabbitmq-server            
+        volumes:
+            - exporthub-mq-volume:/var/lib/rabbitmq
+        labels:
+            io.rancher.scheduler.affinity:host_label: c8-exporthub-service=true

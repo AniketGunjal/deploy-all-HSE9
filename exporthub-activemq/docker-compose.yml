@@ -1,0 +1,44 @@
+#
+# Docker Compose file of ExportHub Service for Rancher:
+#   ActiveMQ
+#
+version: "2"
+volumes:
+    exporthub-activemq-conf-volume:
+        driver: local
+        per_container: true
+    exporthub-activemq-data-volume:
+        driver: local
+        per_container: true
+
+services:
+    # Exporthub Notification Topic
+    exporthub-mq:
+        hostname: exporthub-mq
+        image: rmohr/activemq:5.15.9
+        environment:
+            - ACTIVEMQ_UI_ADMIN_USER
+            - ACTIVEMQ_UI_ADMIN_PASSWORD
+            - ACTIVEMQ_AUTHENTICATION_USER
+            - ACTIVEMQ_AUTHENTICATION_PASSWORD
+
+        # Delete non-admin UI user, replace user/password for UI and authentication and start ActiveMQ after that
+        command:
+            - sh
+            - -c
+            - |
+              sed -i '/user/d ; s/admin: admin/'$$ACTIVEMQ_UI_ADMIN_USER': '$$ACTIVEMQ_UI_ADMIN_PASSWORD'/g' /opt/activemq/conf/jetty-realm.properties &&
+              sed -i 's/admin=admin/'$$ACTIVEMQ_AUTHENTICATION_USER'='$$ACTIVEMQ_AUTHENTICATION_PASSWORD'/g' /opt/activemq/conf/users.properties &&
+              bin/activemq console
+        ports:
+            - 1883:1883
+            - 5672:5672
+            - 8161:8161
+            - 61613:61613
+            - 61614:61614
+            - 61616:61616
+        volumes:
+            - exporthub-activemq-conf-volume:/opt/activemq/conf
+            - exporthub-activemq-data-volume:/opt/activemq/data
+        labels:
+            io.rancher.scheduler.affinity:host_label: c8-exporthub-service=true

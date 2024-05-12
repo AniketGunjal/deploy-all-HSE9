@@ -1,0 +1,22 @@
+version: '2'
+services:
+  mongo:
+    image: mongo:${MONGODB_DOCKER_IMAGE_VERSION}
+    volumes_from:
+    - mongo-datavolume
+    expose:
+    - 27017:27017/tcp
+    labels:
+      io.rancher.sidekicks: mongo-datavolume
+      io.rancher.scheduler.affinity:host_label_soft: c8-change-logging=true
+      io.rancher.scheduler.affinity:host_label_soft: mongodb=true
+
+  mongo-datavolume:
+    image: busybox
+    entrypoint:
+    - /bin/true
+    network_mode: none
+    volumes:
+    - /data/db
+    labels:
+      io.rancher.container.start_once: 'true'

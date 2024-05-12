@@ -1,0 +1,121 @@
+#
+# Docker Compose file of ExportHub Service for Rancher:
+#   ExportHub server
+#
+version: "2"
+
+services:
+    # ExportHub Service
+    exporthub-service:
+        image: centricsoftware/exporthub:${EXPORTHUB_SERVICE_DOCKER_IMAGE_VERSION}
+        environment:
+            - JAVA_OPTS=-Dlog4j2.formatMsgNoLookups=true
+            - exporthub_autorecovery_enable
+            - exporthub_autorecovery_intervalms
+            - exporthub_database_vendor
+            - exporthub_database_server
+            - exporthub_database_dbname
+            - exporthub_database_username
+            - exporthub_database_password
+            - exporthub_database_indexfragmentrebuildpct
+            - exporthub_database_indexfragmentreorganizepct
+            - exporthub_database_statisticsthreads
+            - exporthub_database_tabledeadtuplepct
+            - exporthub_database_patchpool_maxidle
+            - exporthub_database_patchpool_maxtotal
+            - exporthub_database_patchpool_minidle
+            - exporthub_database_restpool_maxidle
+            - exporthub_database_restpool_maxtotal
+            - exporthub_database_restpool_minidle
+            - exporthub_domainserver_address
+            - exporthub_domainserver_authentication
+            - exporthub_domainserver_oauth2_address
+            - exporthub_domainserver_oauth2_refreshbeforeexpirems
+            - exporthub_domainserver_username
+            - exporthub_domainserver_password
+            - exporthub_domainserver_skipsslverification
+            - exporthub_domainserver_comparethreads
+            - exporthub_domainserver_connecttimeout
+            - exporthub_domainserver_fetchlimit
+            - exporthub_domainserver_fetchthreads
+            - exporthub_domainserver_loginretryattempt
+            - exporthub_domainserver_preservedeleted
+            - exporthub_domainserver_readtimeout
+            - exporthub_domainserver_requestretryattempt
+            - exporthub_kafka_consumer_bootstrap_servers=kafka.zookeeper-kafka:9092            
+            - exporthub_kafka_consumer_group_id
+            - exporthub_kafka_consumer_max_poll_interval_ms
+            - exporthub_kafka_consumer_max_poll_records
+            - exporthub_kafka_consumer_isolation_level=read_committed
+            - exporthub_kafka_consumer_request_timeout_ms
+            - exporthub_kafka_consumer_session_timeout_ms
+            - exporthub_kafka_patch_committimeout
+            - exporthub_kafka_patch_deadlockretries
+            - exporthub_kafka_patch_numberofthreads
+            - exporthub_kafka_patch_polltimeout
+            - exporthub_kafka_patch_prefetchminsize
+            - exporthub_kafka_patch_resetcursortimeout
+            - exporthub_kafka_patch_topic
+            - exporthub_kafka_patch_updatecursorrate
+            - exporthub_healthcheck_kafka_consumer_request_timeout_ms
+            - exporthub_healthcheck_kafka_consumer_session_timeout_ms
+            - exporthub_metrics_patchconsumerlagseconds
+            - exporthub_notification_activitytable_enable
+            - exporthub_notification_messaging_format
+            - exporthub_notification_messaging_protocol
+            - exporthub_notification_messaging_version
+            - exporthub_notification_messaging_amqp09_autodelete
+            - exporthub_notification_messaging_amqp09_deliverymode
+            - exporthub_notification_messaging_amqp09_durable
+            - exporthub_notification_messaging_amqp09_exchange
+            - exporthub_notification_messaging_amqp09_exclusive
+            - exporthub_notification_messaging_amqp09_password
+            - exporthub_notification_messaging_amqp09_port
+            - exporthub_notification_messaging_amqp09_queuename
+            - exporthub_notification_messaging_amqp09_server
+            - exporthub_notification_messaging_amqp09_username
+            - exporthub_notification_messaging_amqp10_closetimeoutms
+            - exporthub_notification_messaging_amqp10_connection_container
+            - exporthub_notification_messaging_amqp10_connection_host
+            - exporthub_notification_messaging_amqp10_connection_port
+            - exporthub_notification_messaging_amqp10_connecttimeoutms
+            - exporthub_notification_messaging_amqp10_sender_address
+            - exporthub_notification_messaging_amqp10_sender_durablemode
+            - exporthub_notification_messaging_amqp10_sender_dynamic
+            - exporthub_notification_messaging_amqp10_sender_expirypolicy
+            - exporthub_notification_messaging_amqp10_sender_maxmessagesize
+            - exporthub_notification_messaging_amqp10_sender_name
+            - exporthub_notification_messaging_amqp10_sender_settlemode
+            - exporthub_notification_messaging_amqp10_session_outgoingwindow
+            - exporthub_notification_messaging_sqs_region
+            - exporthub_notification_messaging_sqs_queuename
+            - exporthub_notification_messaging_sqs_queuetype
+            - exporthub_notification_messaging_sqs_messagegroupid
+            - exporthub_notification_messaging_sqs_accessidpath
+            - exporthub_notification_messaging_sqs_accesskeypath
+            - exporthub_notification_messaging_sqs_defaultsmode
+            - exporthub_notification_messaging_sqs_dualstackenabled
+            - exporthub_notification_messaging_sqs_fipsenabled                        
+            - exporthub_securevault_address
+            - exporthub_securevault_cachettl
+            - exporthub_securevault_connecttimeout
+            - exporthub_securevault_readtimeout
+            - exporthub_securevault_requestretryattempt
+            - exporthub_securevault_skipsslverification
+            - exporthub_securevault_token
+            - exporthub_server_iothreads            
+            - exporthub_server_ssl
+            - exporthub_server_sslkeystoresvpath
+            - exporthub_server_sslpasswordsvpath
+            - exporthub_server_workerthreads
+        ports:
+            - "8084:8084"
+        labels:
+            io.rancher.container.pull_image: always
+            io.rancher.scheduler.affinity:host_label: c8-exporthub-service=true
+        # Workaround for Alpine-based images not be able to resolve service aliases.
+        # See https://github.com/rancher/rancher/issues/5041
+        # and https://github.com/rancher/rancher/issues/7026
+        # TODO: remove it when issues are resolved in Alpine and/or Rancher
+        dns_search:
+            - rancher.internal

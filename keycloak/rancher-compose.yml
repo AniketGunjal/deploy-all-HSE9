@@ -1,0 +1,13 @@
+version: '2'
+services:
+    keycloak:
+        scale: 1
+        start_on_create: true
+#        health_check:
+#            port: 8090
+#            interval: 30000
+#            timeout: 10000
+#            unhealthy_threshold: 3
+#            healthy_threshold: 2
+#            response_timeout: 5000
+#            strategy: none

@@ -1,0 +1,96 @@
+#
+# Docker Compose file of Keycloak for Rancher:
+#   Keycloak standalone server
+#
+# Following properties must be changed in C8 pi-configuration.properties file to connect to this Keycloak instance:
+#   C8_APPSERVER_KEYCLOAK_ADDRESS=http://localhost:8090
+#   com.centricsoftware.server.AuthenticationProvider.KEYCLOAKAUTHENTICATIONPROVIDER.Active = true
+#   com.centricsoftware.server.IdentityProvider.CENTRICIDENTITYPROVIDER.DefaultAuthenticationType = centric://REFLECTION/INSTANCE/AuthenticationType/OAuth2
+#
+
+version: '2'
+
+volumes:
+    keycloak-cert-volume: {}
+
+services:
+    # Keycloak standalone server
+    keycloak:
+        image: jboss/keycloak:${KEYCLOAK_IMAGE_VERSION}
+        volumes_from:
+            - keycloak-config
+        volumes:
+            # Keycloak TLS Certificates
+            - keycloak-cert-volume:/etc/x509/https
+        environment:
+            KEYCLOAK_USER: $KEYCLOAK_USER
+            KEYCLOAK_PASSWORD: $KEYCLOAK_PASSWORD
+            KEYCLOAK_LOGLEVEL: $KEYCLOAK_LOGLEVEL
+            KEYCLOAK_DB_ADDR: $KEYCLOAK_DB_ADDR
+            KEYCLOAK_DB_PORT: $KEYCLOAK_DB_PORT
+            KEYCLOAK_DB_VENDOR: $KEYCLOAK_DB_VENDOR
+            KEYCLOAK_DB_DATABASE: $KEYCLOAK_DB_DATABASE
+            KEYCLOAK_DB_USER: $KEYCLOAK_DB_USER
+            KEYCLOAK_C8_WEB_CLIENT_REDIRECT_URL: $KEYCLOAK_C8_WEB_CLIENT_REDIRECT_URL
+            KEYCLOAK_C8_WEB_CLIENT_ORIGIN: $KEYCLOAK_C8_WEB_CLIENT_ORIGIN
+            KEYCLOAK_REALM_FRONTEND_URL: $KEYCLOAK_REALM_FRONTEND_URL
+            # KEYCLOAK_IMPORT: /keycloak/imports/c8-realm.json
+            # KEYCLOAK_DEFAULT_THEME: c8
+        ports:
+            - 8090:8080
+            - 8453:8443
+        labels:
+            io.rancher.container.pull_image: always
+            io.rancher.scheduler.affinity:host_label: c8-keycloak=true
+            io.rancher.sidekicks: keycloak-config, keycloak-initializer
+    
+    keycloak-config:
+        image: centricsoftware/var-to-file
+        environment:
+            - file_path_keycloak_init=/keycloak/updateAdminDetails.sh
+            - file_content_keycloak_init=$KEYCLOAK_INIT
+            - file_path_keycloak_realm=/keycloak/imports/c8-realm.json
+            - file_content_keycloak_realm=$KEYCLOAK_REALM
+            - file_content_keycloak_config903=$KEYCLOAK_CONFIG903
+            - file_path_keycloak_config=/keycloak/configuration/standalone.xml
+            - file_content_keycloak_config=$KEYCLOAK_CONFIG
+            - file_path_keycloak_start=/opt/jboss/startup-scripts/start.sh
+            - file_content_keycloak_start=$KEYCLOAK_START
+        volumes:
+            - /keycloak
+            - /opt/jboss/startup-scripts
+        labels:
+            io.rancher.container.pull_image: always
+            io.rancher.container.start_once: true
+            io.rancher.scheduler.affinity:host_label: c8-keycloak=true
+        command:
+            - sh
+            - -c
+            - 'var-to-file.sh ; chmod +x /opt/jboss/startup-scripts/*sh /keycloak/updateAdminDetails.sh'
+
+    # Initialize Keycloak Admin details
+    keycloak-initializer:
+        image: curlimages/curl:7.73.0
+        environment:
+            _username: $KEYCLOAK_USER
+            _password: $KEYCLOAK_PASSWORD
+            _clientId: admin-cli
+            _granttype: password
+            _role: realm-admin
+            _composite: 'false'
+            _clientRole: 'true'
+            _firstName: Administrator
+            _lastName: Administrator
+            _email: noreply@centricsoftware.com
+            _keycloakAddr: http://keycloak:8080
+        volumes_from:
+            - keycloak-config
+        depends_on:
+            -  keycloak
+        entrypoint: ['sh', '-c']
+        command:
+            - sleep 30 ; . /keycloak/updateAdminDetails.sh
+        labels:
+            io.rancher.container.pull_image: always
+            io.rancher.container.start_once: true
+            io.rancher.scheduler.affinity:host_label: c8-keycloak=true

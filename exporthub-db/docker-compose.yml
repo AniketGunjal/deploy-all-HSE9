@@ -1,0 +1,23 @@
+#
+# Docker Compose file for ExportHub database (Postgres)
+#
+version: '2'
+volumes:
+    exporthub-db-volume:
+        driver: local
+        per_container: true
+
+services:
+    # ExportHub DB backend
+    exporthub-db:
+        image: postgres:11.5
+        ports:
+            - 5432:5432
+        environment:
+            - POSTGRES_DB=exportdb
+            - POSTGRES_USER=hsedba
+            - POSTGRES_PASSWORD=hsedba
+        volumes:
+            - exporthub-db-volume:/var/lib/postgresql/data
+        labels:
+            io.rancher.scheduler.affinity:host_label: c8-exporthub-service=true

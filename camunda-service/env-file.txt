@@ -1,0 +1,9 @@
+com_centricsoftware_c8_address=${C8_URL}
+com_centricsoftware_c8_username=${C8_USERNAME}
+com_centricsoftware_c8_encryptedpassword=${C8_ENCRYPTED_PASSWORD}
+DB_DRIVER=org.postgresql.Driver
+DB_URL=jdbc:postgresql://camunda-db.c8-camunda-db:5432/camundadb
+DB_USERNAME=camundadba
+DB_PASSWORD=camundadba
+WAIT_FOR=camunda-db.c8-camunda-db:5432
+CAMUNDA_DOCKER_IMAGE_VERSION=${CAMUNDA_DOCKER_IMAGE_VERSION:-2.6.1}

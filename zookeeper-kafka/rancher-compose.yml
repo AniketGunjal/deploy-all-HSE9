@@ -1,0 +1,6 @@
+zk:
+  retain_ip: true
+  scale: 3
+kafka:
+  retain_ip: true
+  scale: 3

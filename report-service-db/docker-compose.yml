@@ -1,0 +1,23 @@
+#
+# Docker Compose file for Report Service database (Postgres)
+#
+version: '2'
+volumes:
+    report-service-db-volume:
+        driver: local
+        per_container: true
+
+services:
+    # Report Service DB backend
+    report-service-db:
+        image: postgres:11.5
+        ports:
+            - 15432:5432
+        environment:
+            - POSTGRES_DB=reportdb
+            - POSTGRES_USER=csidba
+            - POSTGRES_PASSWORD=csidba
+        volumes:
+            - report-service-db-volume:/var/lib/postgresql/data
+        labels:
+            io.rancher.scheduler.affinity:host_label: c8-report-service=true

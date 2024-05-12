@@ -1,0 +1,87 @@
+#
+# Docker Compose file of Report Service for Rancher:
+#   ReportDB standalone server
+#
+# Following environment variables in 'environment' section of 'report-service' must be set:
+#   reportdb_domainserver_address - the address of C8 server
+#
+# Following properties must be changed in C8 pi-configuration.properties file to connect to this Report Service instance:
+#   com.centricsoftware.server.reportdb.deployment=remote
+#   com.centricsoftware.server.reportdb.address=http://<your-host-with-reportdb-containers>:8083
+#
+
+# Report Service standalone server
+report-service:
+    environment:
+        - JAVA_OPTS=-Dlog4j2.formatMsgNoLookups=true
+        - reportdb_autorecovery_enable=true
+        - reportdb_autorecovery_intervalms=300000
+        - reportdb_cache_donotcachethresholdms=50
+        - reportdb_cache_maxtimetolivems=180000
+        - reportdb_cache_timetolivefactor=100.0
+        - reportdb_cache_timetoreloadfactor=90.0
+        - reportdb_cache_usesharpexpiration=false
+        - reportdb_database_dbname
+        - reportdb_database_indexfragmentrebuildpct=30.0
+        - reportdb_database_indexfragmentreorganizepct=5.0
+        - reportdb_database_password
+        - reportdb_database_pool_maxidle=8
+        - reportdb_database_pool_maxtotal=600
+        - reportdb_database_pool_minidle=0
+        - reportdb_database_server
+        - reportdb_database_statisticsthreads=3
+        - reportdb_database_tabledeadtuplepct=30.0
+        - reportdb_database_username
+        - reportdb_database_vendor
+        - reportdb_domainserver_address
+        - reportdb_domainserver_authentication
+        - reportdb_domainserver_oauth2_address
+        - reportdb_domainserver_oauth2_refreshbeforeexpirems
+        - reportdb_domainserver_comparethreads=12
+        - reportdb_domainserver_connecttimeout=10000
+        - reportdb_domainserver_fetchlimit=1000
+        - reportdb_domainserver_fetchthreads=12
+        - reportdb_domainserver_loginretryattempt=2
+        - reportdb_domainserver_password
+        - reportdb_domainserver_readtimeout
+        - reportdb_domainserver_requestretryattempt=3
+        - reportdb_domainserver_username
+        - reportdb_domainserver_skipsslverification=false
+        - reportdb_healthcheck_kafka_consumer_request_timeout_ms=5000
+        - reportdb_healthcheck_kafka_consumer_session_timeout_ms=4000
+        - reportdb_kafka_consumer_bootstrap_servers=kafka.zookeeper-kafka:9092
+        - reportdb_kafka_consumer_group_id=reportdb
+        - reportdb_kafka_consumer_isolation_level=read_committed
+        - reportdb_kafka_consumer_max_poll_interval_ms=2147483647
+        - reportdb_kafka_consumer_max_poll_records=1
+        - reportdb_kafka_consumer_request_timeout_ms=31000
+        - reportdb_kafka_consumer_session_timeout_ms=30000
+        - reportdb_kafka_patch_committimeout=300000
+        - reportdb_kafka_patch_deadlockretries=3
+        - reportdb_kafka_patch_numberofthreads=1
+        - reportdb_kafka_patch_polltimeout=10000
+        - reportdb_kafka_patch_prefetchminsize=16
+        - reportdb_kafka_patch_resetcursortimeout=300000
+        - reportdb_kafka_patch_topic=DistributionTopic
+        - reportdb_kafka_patch_updatecursorrate=100
+        - reportdb_metrics_patchconsumerlagseconds=1.0, 10.0
+        - reportdb_server_iothread=4
+        - reportdb_server_port=8083
+        - reportdb_server_workerthreads=32
+        - LOG4J2_appender_console_layout_type=PatternLayout
+        - LOG4J2_appender_console_layout_pattern="[%p] %C{1.} (%t) %X{Context,RequestId}  %m%n"
+        - LOG4J2_rootLogger_appenderRef_console_ref=console
+        #- com_centricsoftware_tracing_tracer=zipkin
+        #- com_centricsoftware_tracing_zipkin_endpoint=http://zipkin:9411/api/v1/spans
+    image: centricsoftware/centric8-reportdb-service:${REPORTDB_SERVICE_DOCKER_IMAGE_VERSION}
+    ports:
+        - "38083:8083"
+    labels:
+        io.rancher.container.pull_image: always
+        io.rancher.scheduler.affinity:host_label_soft: c8-report-service=true
+    # Workaround for Alpine-based images not be able to resolve service aliases.
+    # See https://github.com/rancher/rancher/issues/5041
+    # and https://github.com/rancher/rancher/issues/7026
+    # TODO: remove it when issues are resolved in Alpine and/or Rancher
+    dns_search:
+        - rancher.internal
